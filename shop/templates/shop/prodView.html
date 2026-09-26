@@ -1,68 +1,24 @@
 {% extends 'shop/basic.html' %}
 {% load static %}
+{% block title %}{{ product.product_name }} | My Awesome Cart{% endblock %}
 
-{% block title%} {{product.product_name}} - My Awesome Cart{% endblock %}
 {% block body %}
-<div class="container my-4">
-    <div class="row">
-    <div class="col-md-4">
-    <div class="row">
-        {% if product.image %}<img src="{% static product.image.name %}" width="233px" height="385px" alt="{{ product.product_name }}">{% endif %}
-    </div>
-        <div class="row">
-            <button class="btn btn-primary mx-3">Buy Now</button>
-            <button class="btn btn-primary">Add To Cart</button>
+<main class="page-shell">
+    <div class="product-detail">
+        <div class="detail-image">
+            {% if product.image %}<img src="{% static product.image.name %}" alt="{{ product.product_name }}">{% else %}<span class="product-placeholder" aria-hidden="true">✦</span>{% endif %}
         </div>
-
+        <section class="detail-copy">
+            <p class="eyebrow">{{ product.category }}</p>
+            <h1>{{ product.product_name }}</h1>
+            <p class="product-price">₹ {{ product.price }}</p>
+            <p class="description">{{ product.desc }}</p>
+            <div class="detail-actions">
+                <button type="button" class="button-primary js-add-cart" data-product-id="{{ product.id }}" data-product-name="{{ product.product_name }}" data-product-price="{{ product.price }}">Add to bag</button>
+                <a class="button-secondary" href="/shop/">Continue browsing</a>
+            </div>
+            <div class="detail-benefits"><span>✓ Secure checkout</span><span>✓ Carefully selected finds</span></div>
+        </section>
     </div>
-
-    <div class="col-md-8">
-        <h5>{{product.product_name}}</h5>
-        <p><b>Rs.{{product.price}} </b></p>
-        <p>{{product.desc}}</p>
-
-
-    </div>
-    </div>
-
-
-</div>
-
-
-
-
-{% endblock %}
-
-
-
-
-{% block js %}
-<script>
-console.log('working');
-if(localStorage.getItem('cart') == null){
-var cart = {};
-}
-else
-{
-cart = JSON.parse(localStorage.getItem('cart'));
-document.getElementById('cart').innerHTML = Object.keys(cart).length;
-}
-$('.cart').click(function(){
-console.log('clicked');
-var idstr = this.id.toString();
-console.log(idstr);
-if (cart[idstr] !=undefined){
-cart[idstr] = cart[idstr] + 1;
-}
-else
-{
-cart[idstr] = 1;
-}
-console.log(cart);
-localStorage.setItem('cart', JSON.stringify(cart));
-document.getElementById('cart').innerHTML = Object.keys(cart).length;
-});
-$('#popcart').popover();
-document.getElementById("popcart").setAttribute('data-content', '<h5>Cart for your items in my shopping cart</h5>');
-</script>
+</main>
 {% endblock %}

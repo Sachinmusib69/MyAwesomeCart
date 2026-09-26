@@ -1,36 +1,27 @@
 {% extends 'blog/basic.html' %}
 {% load static %}
-
+{% block title %}Journal | My Awesome Cart{% endblock %}
 {% block body %}
-<div class="container">
-
-
-<div class="row my-2">
-    {% for item in myposts %}
-
-        <div class="col-md-6">
-            <div
-                class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-                <div class="col p-4 d-flex flex-column position-static">
-                    <strong class="d-inline-block mb-2 text-primary">{{item.head0}}</strong>
-                    <h3 class="mb-0">{{item.title}}</h3>
-                    <div class="mb-1 text-muted">Nov 12</div>
-                    <p class="card-text mb-auto">{{item.head1}}</p>
-                    <a href="blogpost/{{item.post_id}}" class="stretched-link">Continue reading</a>
-                </div>
-                <div class="col-auto d-none d-lg-block">
-                    {% if item.thumbnail %}<img src="{% static item.thumbnail.name %}" class="bd-placeholder-img" width="200" height="250"
-                        alt="{{ item.title }}"/>{% endif %}
-
-                </div>
+<main class="page-shell">
+    <p class="eyebrow" style="margin-top:38px">The journal</p>
+    <h1 class="page-title">Ideas for everyday living.</h1>
+    <p class="page-intro">Notes, inspiration and stories from the things we love.</p>
+    {% if myposts %}
+    <div class="blog-grid">
+        {% for item in myposts %}
+        <article class="blog-card">
+            {% if item.thumbnail %}<img src="{% static item.thumbnail.name %}" alt="{{ item.title }}" loading="lazy">{% else %}<div class="product-placeholder" aria-hidden="true">✦</div>{% endif %}
+            <div class="blog-card-copy">
+                <p class="product-category">{{ item.head0|default:"From the journal" }}</p>
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.head1|truncatechars:105 }}</p>
+                <a href="/blog/blogpost/{{ item.post_id }}">Read the story <span aria-hidden="true">→</span></a>
             </div>
-        </div>
-{% if forloop.counter|divisibleby:2 %}
-    </div><div class="row my-2">
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><h2>Stories are on the way.</h2><p>Check back soon for our latest notes and ideas.</p></div>
     {% endif %}
-
-    {% endfor %}
-
-</div>
-
+</main>
 {% endblock %}

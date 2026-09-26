@@ -1,87 +1,62 @@
 {% extends 'shop/basic.html' %}
-{% block title%} My Awesome Cart Tracker{% endblock %}
+{% block title %}Track an order | My Awesome Cart{% endblock %}
 {% block body %}
-<div class="container">
-    <div class="col my-4">
-        <h2>Enter your Order Id and Email address to track your order</h2>
-        <form method="post" action="#" id="trackerForm">{% csrf_token %}
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label for="inputname">Order Id</label>
-                    <input type="text" class="form-control" id="orderId" name="orderId" placeholder="Order Id">
-                </div>
-                <div class="form-group col-md-6">
-                    <label for="inputEmail4">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" placeholder="Email">
-                </div>
-                <button type="submit" class="btn btn-primary">Track Order</button>
-            </div>
+<main class="page-shell">
+    <p class="eyebrow" style="margin-top:36px">Stay in the loop</p>
+    <h1 class="page-title">Track your order</h1>
+    <p class="page-intro">Enter the order number and email used at checkout to see the latest update.</p>
+    <div class="checkout-layout">
+        <section class="checkout-panel">
+            <h2>Order details</h2>
+            <p class="panel-subtitle">We’ll look up the latest status for you.</p>
+            <form method="post" action="/shop/tracker/" id="trackerForm">{% csrf_token %}
+                <div class="form-group"><label for="orderId">Order number</label><input type="text" class="form-control" id="orderId" name="orderId" placeholder="e.g. 1042" required></div>
+                <div class="form-group"><label for="email">Email address</label><input type="email" class="form-control" id="email" name="email" placeholder="you@example.com" autocomplete="email" required></div>
+                <button type="submit" class="button-primary">Find my order</button>
+            </form>
+        </section>
+        <section class="checkout-panel">
+            <h2>Order status</h2>
+            <p class="panel-subtitle">Updates will appear here after you search.</p>
+            <ul class="tracker-list" id="items">Enter your order number and email, then select “Find my order”.</ul>
+            <h2 style="margin-top:28px">Items in this order</h2>
+            <ul class="tracker-list" id="citems"></ul>
+        </section>
     </div>
-    <div class="col my-4">
-        <h2>Your Order Status</h2>
-        <div class="my-4">
-            <ul class="list-group" id="items">
-                Enter your order Id and Email and click Track Order to find details about your order!
-            </ul>
-        </div>
-        <h2>Your Order Details</h2>
-        <div class="my-4">
-            <ul class="list-group" id="citems">
-            </ul>
-        </div>
-    </div>
-</div>
+</main>
 {% endblock %}
 {% block js %}
 <script>
 $('#trackerForm').submit(function(event) {
-    $('#items').empty();
-    var formData = {
-        'orderId': $('input[name=orderId]').val(),
-        'email': $('input[name=email]').val(),
-        'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
-    };
-    $.ajax({
-            type: 'POST',
-            url: '/shop/tracker/',
-            data: formData,
-            encode: true
-        })
-        .done(function(data) {
-            $('#citems').empty();
-            console.log(data)
-            data = JSON.parse(data);
-            if (data['status'] == 'success') {
-                updates = data['updates'];
-                for (i = 0; i < updates.length; i++) {
-                    let text = updates[i]['text'];
-                    let time = updates[i]['time'];
-                    mystr = `<li class="list-group-item d-flex justify-content-between align-items-center">
-                    ${text}
-                    <span class="badge badge-primary badge-pill">${time}</span>
-                </li>`
-                    $('#items').append(mystr);
-                }
-                // Fill in the order details
-                cart = JSON.parse(data['itemsJson']);
-                console.log(cart);
-                for (item in cart) {
-                    let name = cart[item][1];
-                    let qty = cart[item][0];
-                    mystr = `<li class="list-group-item d-flex justify-content-between align-items-center">
-                    ${name}
-                    <span class="badge badge-primary badge-pill">${qty}</span>
-                </li>`
-                    $('#citems').append(mystr);
-                }
-            } else {
-                mystr = `<li class="list-group-item d-flex justify-content-between align-items-center">
-                    Sorry, We are not able to fetch this order id and email. Make sure to type correct order Id and email</li>`
-                $('#items').append(mystr);
-                $('#citems').append(mystr);
-            }
-        });
     event.preventDefault();
+    $('#items').empty();
+    $('#citems').empty();
+    $.ajax({
+        type: 'POST',
+        url: '/shop/tracker/',
+        data: {
+            orderId: $('#orderId').val(),
+            email: $('#email').val(),
+            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+        }
+    }).done(function(response) {
+        let data;
+        try { data = typeof response === 'string' ? JSON.parse(response) : response; }
+        catch (error) { data = {status: 'error'}; }
+        if (data.status === 'success') {
+            (data.updates || []).forEach(function(update) {
+                $('<li>').text(update.text + ' · ' + update.time).appendTo('#items');
+            });
+            const cart = JSON.parse(data.itemsJson || '{}');
+            Object.values(cart).forEach(function(item) {
+                $('<li>').text(item[1] + ' · Qty ' + item[0]).appendTo('#citems');
+            });
+        } else {
+            $('<li>').text('We could not find that order. Check the order number and email and try again.').appendTo('#items');
+        }
+    }).fail(function() {
+        $('<li>').text('We could not retrieve your order right now. Please try again.').appendTo('#items');
+    });
 });
 </script>
 {% endblock %}
