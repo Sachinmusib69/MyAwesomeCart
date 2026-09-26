@@ -1,4 +1,5 @@
 {% extends 'blog/basic.html' %}
+{% load static %}
 
 {% block body %}
 <div class="container">
@@ -18,8 +19,8 @@
                     <a href="blogpost/{{item.post_id}}" class="stretched-link">Continue reading</a>
                 </div>
                 <div class="col-auto d-none d-lg-block">
-                    <img src="/media/{{item.thumbnail}}" class="bd-placeholder-img" width="200" height="250"
-                        aria-label="Placeholder: Thumbnail"/>
+                    {% if item.thumbnail %}<img src="{% static item.thumbnail.name %}" class="bd-placeholder-img" width="200" height="250"
+                        alt="{{ item.title }}"/>{% endif %}
 
                 </div>
             </div>
