@@ -1,0 +1,206 @@
+{% extends 'shop/basic.html' %}
+{% block title%} Checkout - My Awesome Cart{% endblock %}
+{% block body %}
+<div class="container">
+    <div class="col my-4">
+        <h2>Step 1 - My Awesome Cart Express Checkout - Review Your Cart Items</h2>
+        <div class="my-4">
+            <ul class="list-group" id="items">
+            </ul>
+
+            <nav aria-label="breadcrumb">
+  <ol class="breadcrumb mt-3">
+    <li class="breadcrumb-item active" aria-current="page">Your Cart Total Is <b>Rs. <span id="totalPrice"></span></b>. Enter your details below & place your order. Thanks for using My Awesome Cart!</li>
+  </ol>
+</nav>
+
+
+
+
+        </div>
+    </div>
+    <div class="col my-4">
+        <h2>Step 2 - Enter Address & Other Details:</h2>
+        <form id="checkout-form">{% csrf_token %}
+            <input type="hidden" name="itemsJson" id="itemsJson">
+            <input type="hidden" name="amount" id="amount">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" placeholder="Name">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="Email">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Email">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="Address1">Address</label>
+                <input type="text" class="form-control" id="address1" name="address1" placeholder="1234 Main St">
+            </div>
+            <div class="form-group">
+                <label for="Address2">Address line 2</label>
+                <input type="text" class="form-control" id="address2" name="address2" placeholder="Apartment, studio, or floor">
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="City">City</label>
+                    <input type="text" class="form-control" id="city" name="city">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="State">State</label>
+                    <input type="text" class="form-control" id="state" name="state"  placeholder="Enter State">
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="Zip">Zip</label>
+                    <input type="text" class="form-control" id="zip_code" name="zip_code">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="Phone">Phone Number</label>
+                <input type="tel" class="form-control" id="phone" name="phone">
+            </div>
+            <button type="button" class="btn btn-primary" id="pay-button">Pay with Razorpay</button>
+            <p id="payment-message" class="mt-3" role="status" aria-live="polite"></p>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+if (localStorage.getItem('cart') == null) {
+    var cart = {};
+} else {
+    cart = JSON.parse(localStorage.getItem('cart'));
+}
+console.log(cart);
+var sum = 0;
+var totalPrice = 0;
+if ($.isEmptyObject(cart)) {
+    //if object is empty
+    mystr = `<p>Your cart is empty, please add some items to your cart before checking out!</p>`
+    $('#items').append(mystr);
+    document.getElementById('pay-button').disabled = true;
+} else {
+    for (item in cart) {
+        let name = cart[item][1];
+        let qty = cart[item][0];
+        let itemPrice = cart[item][2];
+        sum = sum + qty;
+        totalPrice = totalPrice + qty* itemPrice;
+        mystr = `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    ${name}
+                    <span class="badge badge-primary badge-pill">${qty}</span>
+                </li>`
+        $('#items').append(mystr);
+    }
+}
+document.getElementById('cart').innerHTML = sum;
+document.getElementById('totalPrice').innerHTML = totalPrice;
+$('#itemsJson').val(JSON.stringify(cart));
+$('#amount').val($('#totalPrice').html())
+
+const payButton = document.getElementById('pay-button');
+const paymentMessage = document.getElementById('payment-message');
+const checkoutForm = document.getElementById('checkout-form');
+
+payButton.addEventListener('click', async function () {
+    paymentMessage.textContent = '';
+    payButton.disabled = true;
+
+    try {
+        const formData = new FormData(checkoutForm);
+        const createResponse = await fetch('/api/create-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            },
+            body: JSON.stringify({
+                items: JSON.parse(document.getElementById('itemsJson').value),
+                customer: {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    address1: formData.get('address1'),
+                    address2: formData.get('address2'),
+                    city: formData.get('city'),
+                    state: formData.get('state'),
+                    zip_code: formData.get('zip_code'),
+                    phone: formData.get('phone')
+                }
+            })
+        });
+        const order = await createResponse.json();
+        if (!createResponse.ok) {
+            throw new Error(order.error || 'Could not start payment.');
+        }
+
+        const options = {
+            key: order.key_id,
+            amount: order.amount,
+            currency: order.currency,
+            name: 'My Awesome Cart',
+            description: 'Order payment',
+            order_id: order.order_id,
+            prefill: {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                contact: formData.get('phone')
+            },
+            handler: async function (payment) {
+                try {
+                    const verifyResponse = await fetch('/api/verify-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                        },
+                        body: JSON.stringify(payment)
+                    });
+                    const result = await verifyResponse.json();
+                    if (!verifyResponse.ok || !result.success) {
+                        throw new Error(result.error || 'Payment verification failed.');
+                    }
+                    paymentMessage.textContent = 'Payment successful. Your order has been confirmed.';
+                    localStorage.removeItem('cart');
+                    document.getElementById('cart').textContent = '0';
+                    setTimeout(function () { window.location.href = '/shop/'; }, 1800);
+                } catch (error) {
+                    paymentMessage.textContent = error.message;
+                    payButton.disabled = false;
+                }
+            },
+            modal: {
+                ondismiss: function () {
+                    paymentMessage.textContent = 'Payment was cancelled. Your cart is still saved.';
+                    payButton.disabled = false;
+                }
+            },
+            theme: { color: '#3399cc' }
+        };
+
+        const razorpayCheckout = new Razorpay(options);
+        razorpayCheckout.on('payment.failed', function (event) {
+            const failure = event.error || {};
+            const details = [
+                failure.description,
+                failure.reason && 'Reason: ' + failure.reason,
+                failure.step && 'Step: ' + failure.step,
+                failure.code && 'Code: ' + failure.code
+            ].filter(Boolean);
+            paymentMessage.textContent = 'Razorpay could not complete the payment. ' +
+                (details.join(' | ') || 'Please try again.');
+            // Razorpay includes these fields in its failure response; keep them
+            // available in DevTools to diagnose test-mode or issuer-flow issues.
+            console.error('Razorpay payment.failed:', failure);
+            payButton.disabled = false;
+        });
+        razorpayCheckout.open();
+    } catch (error) {
+        paymentMessage.textContent = error.message;
+        payButton.disabled = false;
+    }
+});
+</script>
+{% endblock %}
