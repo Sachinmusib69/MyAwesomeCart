@@ -1,0 +1,36 @@
+{% extends 'shop/basic.html' %}
+{% load static %}
+{% block title %}Your cart | My Awesome Cart{% endblock %}
+{% block body %}
+<main class="page-shell">
+    <p class="eyebrow" style="margin-top:36px">Your picks</p>
+    <h1 class="page-title">Your cart</h1>
+    <p class="page-intro">Review your items and adjust quantities before checkout.</p>
+
+    <div class="cart-layout">
+        <section class="cart-panel" aria-labelledby="cart-items-heading">
+            <h2 id="cart-items-heading">Items in your cart</h2>
+            <p class="cart-subtitle" id="cart-items-caption">Your selection is saved in this browser.</p>
+            <div class="cart-lines" id="cart-items" aria-live="polite"></div>
+            <div class="cart-empty" id="cart-empty" hidden>
+                <h2>Your cart is taking a little break.</h2>
+                <p>Add something you love and it’ll show up here.</p>
+                <a class="button-primary" href="/shop/">Continue shopping</a>
+            </div>
+        </section>
+
+        <aside class="cart-summary" id="cart-summary" aria-labelledby="summary-heading">
+            <h2 id="summary-heading">Order summary</h2>
+            <div class="summary-row"><span>Items</span><span id="summary-count">0</span></div>
+            <div class="summary-row"><span>Subtotal</span><span id="summary-subtotal">₹0</span></div>
+            <div class="summary-row summary-grand"><span>Total</span><span id="summary-total">₹0</span></div>
+            <a class="button-primary" href="/shop/checkout/" id="checkout-link">Continue to checkout <span aria-hidden="true">→</span></a>
+            <button type="button" class="cart-clear" id="clear-cart">Clear cart</button>
+        </aside>
+    </div>
+</main>
+{{ product_catalog|json_script:"product-catalog" }}
+{% endblock %}
+{% block js %}
+<script src="{% static 'shop/js/cart.js' %}"></script>
+{% endblock %}

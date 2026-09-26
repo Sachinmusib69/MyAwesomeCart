@@ -30,6 +30,9 @@
     });
   }
 
+  window.addEventListener('cart:updated', updateBadge);
+  window.addEventListener('storage', updateBadge);
+
   document.addEventListener('click', function (event) {
     const button = event.target.closest('.js-add-cart');
     if (!button) return;

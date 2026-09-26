@@ -128,6 +128,20 @@ def checkout(request):
     return render(request, 'shop/checkout.html')
 
 
+def cart(request):
+    from django.templatetags.static import static
+
+    product_catalog = {
+        'pr%s' % product.id: {
+            'name': product.product_name,
+            'price': product.price,
+            'image': static(product.image.name) if product.image else '',
+        }
+        for product in Product.objects.all()
+    }
+    return render(request, 'shop/cart.html', {'product_catalog': product_catalog})
+
+
 @require_POST
 def create_razorpay_order(request):
     if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
